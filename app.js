@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const verifyToken = require('./utils/token');
 const axios = require('axios');
 const { gptUrl } = require('./config');
+const {filterWords}= require('./utils/bad-words-filter');
 
 // 使用 body-parser 中间件解析请求体
 app.use(bodyParser.json());
@@ -41,7 +42,7 @@ app.post('/members/login', async (req, res) => {
     });
 });
 
-app.use(verifyToken);
+// app.use(verifyToken);
 // 调用支付宝接口
 app.post('/members/:id/alipay', (req, res) => {
 
@@ -63,6 +64,18 @@ app.get('/members', (req, res) => {
 // 获取单个会员剩余积分
 app.get('/members/:id/points', (req, res) => {
 
+    const { id } = req.params;
+    const sql = `SELECT * FROM members WHERE id = ?`;
+    connection.query(sql, [id], (error, results) => {
+        results = results[0];
+        if (error) {
+            return res.status(500).send({ message: '查询错误' });
+        }
+        if (results.length === 0) {
+            return res.status(404).send({ message: 'Member not found' });
+        }
+        res.send({ points: results.points });
+    })
 })
 
 // 充值签到获得积分
@@ -123,7 +136,9 @@ app.post('/gpt', (req, res) => {
     const { prompt } = req.body;
     const url = `${gptUrl}`;
     const body = { prompt };
-
+    console.log(filterWords(prompt));
+    filterWords(prompt)?
+        res.status(400).send({message:'包含敏感词'}):
     axios.post(url, body).then(result=>{
         // console.log(result.data);
         res.send(result.data);
