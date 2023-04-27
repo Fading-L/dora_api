@@ -1,21 +1,16 @@
 const express = require('express');
-const mysql = require('mysql');
 const bodyParser = require('body-parser');
-
+const {connection} = require('./database/index');
 const app = express();
-const port = 4000;
+const { port, secretKey }= require('./config');
+const jwt = require('jsonwebtoken');
+const verifyToken = require('./utils/token');
 
-// 连接 MySQL 数据库
-const connection = mysql.createConnection({
-    host: '47.108.80.134',
-    port: 3306,
-    user: 'dora',
-    password: 'YP5MZY5smhCmKAYG',
-    database: 'dora'
-});
+const { gptUrl } = require('./config');
 
 // 使用 body-parser 中间件解析请求体
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // 注册会员
 app.post('/members', (req, res) => {
@@ -30,6 +25,45 @@ app.post('/members', (req, res) => {
         res.send(member);
     });
 });
+
+// 会员登录
+app.post('/members/login', async (req, res) => {
+    const { name, password } = req.body;
+    const sql = `SELECT * FROM members WHERE name = ? AND password = ?`;
+    const values = [name, password];
+    connection.query(sql, values, (error, results) => {
+        console.log(results);
+        if(error){
+            return res.status(404).send({ message: '用户名或密码错误' });
+        }
+        const token = jwt.sign({ name }, secretKey, { expiresIn: '1h' });
+        res.status(200).json({ message: '登录成功', token });
+    });
+});
+
+app.use(verifyToken);
+// 调用支付宝接口
+app.post('/members/:id/alipay', (req, res) => {
+
+
+})
+
+// 调用微信接口
+app.post('/members/:id/wechat', (req, res) => {
+
+
+})
+
+// 获取会员列表
+
+app.get('/members', (req, res) => {
+
+})
+
+// 获取单个会员剩余积分
+app.get('/members/:id/points', (req, res) => {
+
+})
 
 // 充值签到获得积分
 app.post('/members/:id/recharge', (req, res) => {
@@ -82,6 +116,24 @@ app.post('/members/:id/submit', (req, res) => {
             res.send(member);
         });
     });
+});
+
+// 向 GPT-3 提交 API 请求
+app.post('/gpt', (req, res) => {
+    const { prompt } = req.body;
+    const url = `${gptUrl}`;
+    const body = { prompt };
+    fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' }
+    })
+        .then(response => {
+            console.log(response)
+            response.json();
+        })
+        .then(data => res.send(data))
+        .catch(error => res.status(500).send(error));
 });
 
 // 启动服务器
