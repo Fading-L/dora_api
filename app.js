@@ -5,7 +5,7 @@ const app = express();
 const { port, secretKey }= require('./config');
 const jwt = require('jsonwebtoken');
 const verifyToken = require('./utils/token');
-
+const axios = require('axios');
 const { gptUrl } = require('./config');
 
 // 使用 body-parser 中间件解析请求体
@@ -123,17 +123,13 @@ app.post('/gpt', (req, res) => {
     const { prompt } = req.body;
     const url = `${gptUrl}`;
     const body = { prompt };
-    fetch(url, {
-        method: 'POST',
-        body: JSON.stringify(body),
-        headers: { 'Content-Type': 'application/json' }
+
+    axios.post(url, body).then(result=>{
+        // console.log(result.data);
+        res.send(result.data);
+    }).catch(err=>{
+        return res.status(500).send(err);
     })
-        .then(response => {
-            console.log(response)
-            response.json();
-        })
-        .then(data => res.send(data))
-        .catch(error => res.status(500).send(error));
 });
 
 // 启动服务器
