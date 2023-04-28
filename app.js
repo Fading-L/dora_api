@@ -6,7 +6,7 @@ const { port, secretKey }= require('./config');
 const jwt = require('jsonwebtoken');
 const verifyToken = require('./utils/token');
 const axios = require('axios');
-const { gptUrl } = require('./config');
+const { gptUr,host } = require('./config');
 const {filterWords}= require('./utils/bad-words-filter');
 
 // 使用 body-parser 中间件解析请求体
@@ -42,25 +42,7 @@ app.post('/members/login', async (req, res) => {
     });
 });
 
-// app.use(verifyToken);
-// 调用支付宝接口
-app.post('/members/:id/alipay', (req, res) => {
-
-
-})
-
-// 调用微信接口
-app.post('/members/:id/wechat', (req, res) => {
-
-
-})
-
-// 获取会员列表
-
-app.get('/members', (req, res) => {
-
-})
-
+app.use(verifyToken);
 // 获取单个会员剩余积分
 app.get('/members/:id/points', (req, res) => {
 
@@ -148,6 +130,9 @@ app.post('/gpt', (req, res) => {
 });
 
 // 启动服务器
-app.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
+app.listen(port,host, () => {
+    console.log(`Server listening at http://${host}:${port}`);
 });
+
+
+
